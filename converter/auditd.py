@@ -31,12 +31,23 @@ class ArgumentParser(argparse.ArgumentParser):
         raise ArgumentException(message)
 
 
-class AuditObject:
+class SystemCall:
+    def __init__(self, *args, **kwargs):
+        self.args = args
+        self.kwargs = kwargs
+
+    @property
+    def ptrace(self):
+        print(self.systemcall)
+
+
+class AuditObject(SystemCall):
     """AuditObject containing convertion methods"""
 
     def __init__(self, *args, **kwargs):
         self.args = args
         self.kwargs = kwargs
+        super().__init__(self)
 
     @property
     def file_execute_access(self) -> dict:
@@ -92,6 +103,8 @@ class AuditObject:
         if self.rule_type == "file":
             return self.file_access
 
+        return None
+
 
 class AuditRule(AuditObject):
     """Object containing auditd rule attributes
@@ -110,6 +123,7 @@ class AuditRule(AuditObject):
         action: str = None,
         activity: str = None,
         rule_type: str = None,
+        raw_rule: str = None,
         error: bool = None,
     ):
 
@@ -120,6 +134,7 @@ class AuditRule(AuditObject):
         self.action = action
         self.activity = activity
         self.rule_type = rule_type
+        self.raw_rule = raw_rule
         self.error = error
         super().__init__(self)
 
@@ -139,8 +154,8 @@ class AuditRule(AuditObject):
             "-a",
             help="Action/Filter, ex: always,exit. Filter options: task, exit, user, and exclude",
         )
-        parser.add_argument("-S", help="Name of the system call")
-        parser.add_argument("-F", help="Key=Value pair or filters")
+        parser.add_argument("-S", action="append", help="Name of the system call")
+        parser.add_argument("-F", action="append", help="Key=Value pair or filters")
         parser.add_argument("-k", help="Label/tag added when a rule matches")
         parser.add_argument("-w", help="Path to file/directory for file system rules")
         parser.add_argument(
@@ -158,6 +173,7 @@ class AuditRule(AuditObject):
                 tag=args.k,
                 file=args.w,
                 activity=args.p,
+                raw_rule=rule,
                 rule_type=rule_type,
             )
 
