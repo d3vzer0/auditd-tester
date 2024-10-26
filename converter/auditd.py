@@ -39,7 +39,12 @@ class AuditObject:
         self.kwargs = kwargs
 
     @property
-    def file_execute_access(self):
+    def file_execute_access(self) -> dict:
+        """Returns an ansible task testing file execs
+
+        Returns:
+            dict: Dictionary containing ansible task
+        """
         return {
             "name": f"Tests execute access for {self.file}",
             "ansible.builtin.shell": self.file,
@@ -47,6 +52,11 @@ class AuditObject:
 
     @property
     def file_read_access(self):
+        """Returns an ansible task testing reading a file
+
+        Returns:
+            dict: Dictionary containing ansible task
+        """
         return {
             "name": f"Tests read access for {self.file}",
             "slurp": {"src": self.file},
@@ -54,6 +64,11 @@ class AuditObject:
 
     @property
     def file_write_access(self):
+        """Returns an ansible task testing writing to a file
+
+        Returns:
+            dict: Dictionary containing ansible task
+        """
         return {
             "name": f"Test write access for {self.file}",
             "ansible.builtin.lineinfile": {
