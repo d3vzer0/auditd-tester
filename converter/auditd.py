@@ -1,5 +1,11 @@
 import argparse
 from enum import Enum
+from yaml import dump
+
+try:
+    from yaml import CDumper as Dumper
+except ImportError:
+    from yaml import Dumper
 
 
 class Permission(Enum):
@@ -32,6 +38,45 @@ class AuditObject:
         self.args = args
         self.kwargs = kwargs
 
+    @property
+    def file_execute_access(self):
+        return {
+            "name": f"Tests execute access for {self.file}",
+            "ansible.builtin.shell": self.file,
+        }
+
+    @property
+    def file_read_access(self):
+        return {
+            "name": f"Tests read access for {self.file}",
+            "slurp": {"src": self.file},
+        }
+
+    @property
+    def file_write_access(self):
+        return {
+            "name": f"Test write access for {self.file}",
+            "ansible.builtin.lineinfile": {
+                "insertbefore": "BOF",
+                "line": "# AuditD Test case",
+            },
+        }
+
+    @property
+    def file_access(self):
+        test_case = self.file_read_access
+        if self.activity:
+            if "w" in self.activity:
+                test_case = self.file_write_access
+            if "x" in self.activity:
+                test_case = self.file_execute_access
+        return test_case
+
+    @property
+    def test(self):
+        if self.rule_type == "file":
+            return self.file_access
+
 
 class AuditRule(AuditObject):
     """Object containing auditd rule attributes
@@ -61,7 +106,7 @@ class AuditRule(AuditObject):
         self.activity = activity
         self.rule_type = rule_type
         self.error = error
-        # super().__init__(self)
+        super().__init__(self)
 
     @classmethod
     def from_string(cls, rule: str) -> "AuditRule":
