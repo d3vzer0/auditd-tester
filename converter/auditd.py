@@ -37,6 +37,18 @@ class SystemCall:
         self.kwargs = kwargs
 
     @property
+    def socket(self):
+        if "a1" not in self.filters:
+            destination = "8.8.8.8" if self.filters["a0"] == "2" else "2600::"
+
+        return {
+            "name": f"Testing socket connections (via DNS) to {destination}",
+            "ansible.builtin.debug": {
+                "msg": f"{{{{ lookup('community.general.dig', '{destination}')}}}}"
+            },
+        }
+
+    @property
     def ptrace(self):
         print(self.systemcall)
 
@@ -99,11 +111,18 @@ class AuditObject(SystemCall):
         return test_case
 
     @property
+    def sys_access(self):
+        # TODO: Rewrite for dict/cases
+        if self.systemcall:
+            if "socket" in self.systemcall:
+                return self.socket
+
+    @property
     def test(self):
         if self.rule_type == "file":
             return self.file_access
-
-        return None
+        else:
+            return self.sys_access
 
 
 class AuditRule(AuditObject):
@@ -137,6 +156,10 @@ class AuditRule(AuditObject):
         self.raw_rule = raw_rule
         self.error = error
         super().__init__(self)
+
+    @property
+    def filters(self):
+        return {val.split("=")[0]: val.split("=")[1] for val in self.filter}
 
     @classmethod
     def from_string(cls, rule: str) -> "AuditRule":
